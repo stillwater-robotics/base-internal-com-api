@@ -8,12 +8,12 @@ int num_passed = 0;
 /* ################ */
 void test_start(int test_no, char* test_name){
     num_tests++;
-    printf("-------\nTEST %d: %s\n--\n", test_no, test_name);
+    printf("------------------------\nTEST %d: %s\n\n", test_no, test_name);
 }
 
 void test_end(int success){
     if(success) num_passed++;
-    printf("TEST %s | %d/%d Running Total\n", success? "PASS":"FAIL", num_passed, num_tests);
+    printf("\nTEST %s | %d/%d Running Total\n\n", success? "PASS":"FAIL", num_passed, num_tests);
 }
 
 void print_bica_arr(unsigned char * arr, int size){
@@ -28,9 +28,9 @@ void print_bica_arr(unsigned char * arr, int size){
 /* ################# */
 // test_blank message generation (and lookup)
 void test_1(){
-    test_start(1, "M_TEST_BLANK Create");
-    _bica_m_function_ptr function;
-    function = bica_get_function(BICAM_TEST_BLANK, BICAT_CREATE);
+    test_start(1, "M_TEST_DUMMY Create");
+    bica_func function;
+    function = bica_get_function(BICAM_TEST_DUMMY, BICAT_CREATE);
 
     if(function == nullptr){ 
         test_end(0);
@@ -57,8 +57,8 @@ void test_1(){
 //Fail to find result
 void test_2(){
     test_start(2, "M_TEST_BLANK FAIL TO FIND");
-    _bica_m_function_ptr function;
-    function = bica_get_function(0x00, BICAT_PROCESS);
+    bica_func function;
+    function = bica_get_function(BICAM_TEST_NULLPTR, BICAT_PROCESS);
 
     test_end(function == nullptr);
 }
@@ -82,11 +82,11 @@ int dummy_func(unsigned char* buffer, int buffer_len, void* data){
 
 void test_4(){
     test_start(4, "Modify BICA Table");
-    bica_set_hook(BICAM_TEST_BLANK, BICAT_PROCESS, &dummy_func);
+    bica_set_hook(BICAM_TEST_DUMMY, BICAT_PROCESS, &dummy_func);
     dummy_var = 0;
 
-    _bica_m_function_ptr function;
-    function = bica_get_function(BICAM_TEST_BLANK, BICAT_PROCESS);
+    bica_func function;
+    function = bica_get_function(BICAM_TEST_DUMMY, BICAT_PROCESS);
     unsigned char buf[BICA_BUFFER_LEN];
     if(function == nullptr) printf("Bad Function Lookup\n");
     else function(buf, BICA_BUFFER_LEN, NULL);
@@ -94,7 +94,7 @@ void test_4(){
 
     test_end(dummy_var);
     dummy_var = 0;
-    bica_set_hook(BICAM_TEST_BLANK, BICAT_PROCESS, nullptr);
+    bica_set_hook(BICAM_TEST_DUMMY, BICAT_PROCESS, nullptr);
 }
 
 //Indexing/binary search test
@@ -111,10 +111,30 @@ void test_5(){
     test_end(pass);
 }
 
+//Overwriting on_nullptr
+int dummy_var_2 = 0;
+void dummy_func_2(unsigned char message_id, int type, int index_found){
+    printf("Called new nullptr func, %02x\n", message_id);
+    dummy_var_2 = 1;
+}
+
+void test_6(){
+    test_start(6, "set bica_on_nullptr");
+    bica_get_function(BICAM_TEST_DUMMY, BICAT_PROCESS);
+    printf("Overwrite on_nullptr\n");
+    bica_on_nullptr = dummy_func_2;
+    bica_get_function(BICAM_TEST_DUMMY, BICAT_PROCESS);
+
+    test_end(dummy_var_2);
+    dummy_var_2 = 0;
+    bica_on_nullptr = _bicad_on_nullptr;
+}
+
 int main(int argc, char* argv[]){
     test_1();
     test_2();
     test_3();
     test_4();
     test_5();
+    test_6();
 }

@@ -55,13 +55,15 @@
 #define BICAM_HANDSHAKE_REQ 0xE2
 
 //TEST MESSAGES
-#define BICAM_TEST_BLANK 0xFF
+#define BICAM_TEST_NULLPTR 0xFE
+#define BICAM_TEST_DUMMY 0xFF
 
 
 //##### Function Hook Definitions #####
 #define BICAT_CREATE 0 
 #define BICAT_PROCESS 1
 typedef int (*_bica_m_function_ptr)(unsigned char* buffer, int buffer_len, void* data);
+typedef _bica_m_function_ptr bica_func;
 _bica_m_function_ptr bica_get_function(unsigned char message_id, int type);
 
 struct _bica_m_lookup_entry{
@@ -76,7 +78,7 @@ int _bicad_testblank_create(unsigned char * buffer, int buffer_len, void* data);
 
 // ADD NEW MESSAGES HERE, WITH nullptr ENTRIES!
 // KEEP THIS SORTED.
-#define BICA_NUM_MESSAGE_IDS 17 //Increment with new messages
+#define BICA_NUM_MESSAGE_IDS 18 //Increment with new messages
 struct _bica_m_lookup_entry _bica_m_lookup_table[] = {
 {BICAM_SAFETY_OVERRIDE_REP,     nullptr,                    nullptr},
 {BICAM_SAFETY_OVERRIDE_REQ,     nullptr,                    nullptr},
@@ -94,7 +96,8 @@ struct _bica_m_lookup_entry _bica_m_lookup_table[] = {
 {BICAM_SEND_STATE_ESTIMATE_UPD, nullptr,                    nullptr},
 {BICAM_HANDSHAKE_REP,           nullptr,                    nullptr},
 {BICAM_HANDSHAKE_REQ,           nullptr,                    nullptr},
-{BICAM_TEST_BLANK,              _bicad_testblank_create,    nullptr}
+{BICAM_TEST_NULLPTR,            nullptr,                    nullptr},
+{BICAM_TEST_DUMMY,              _bicad_testblank_create,    nullptr}
 };
 
 // Called when nothing is found.
