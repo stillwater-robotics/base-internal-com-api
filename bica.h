@@ -13,8 +13,8 @@
 /* Check if C or C++ */
 #ifndef __cpluscplus
 /* Compiling as C */
-  #define nullptr NULL
   #include <stdlib.h>
+  #define nullptr NULL
 #else
 /* Compiling as C++ */
   #include <cstdlib>
@@ -27,7 +27,7 @@
 
 /* Define Constants */
 #define BICA_VERSION 1
-#define BICA_BUFFER_LEN 8
+#define BICA_BUFFER_LEN 9
 
  //##### Message ID Definitions #####
  // SAFETY
@@ -157,7 +157,8 @@ _bica_m_function_ptr bica_get_function(unsigned char message_id, int type){
 }
 
 int _bicad_testblank_create(unsigned char * buffer, int buffer_len, void* data){
-  for(int i = 0; i < buffer_len; i++)
+  if(buffer_len > 0) buffer[0] = 0xFF;
+  for(int i = 1; i < buffer_len; i++)
     buffer[i] = (unsigned char) i;
   return 1;
 }

@@ -38,8 +38,14 @@ void test_1(){
         unsigned char buf[BICA_BUFFER_LEN];
         function(buf, BICA_BUFFER_LEN, NULL);
         print_bica_arr(buf, BICA_BUFFER_LEN);
-        for (int i = 0; i< BICA_BUFFER_LEN; i++){
+        for (int i = 1; i< BICA_BUFFER_LEN; i++){
             if(buf[i] != i){
+                test_end(0);
+                return;
+            }
+        }
+        if(BICA_BUFFER_LEN>0){
+            if(buf[0]!=0xFF){
                 test_end(0);
                 return;
             }
