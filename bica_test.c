@@ -1,3 +1,15 @@
+/*
+ * #         __  |__                          #
+ * #      __L L_|L L__    Stillwater Robotics #
+ * #...[+(____________)          -2025-       #
+ * #       C_________/                        #
+ *  
+ * bica_test.c
+ * Created: Oct 10, 2025
+ * Last Edited: Oct 20, 2025
+ * 
+ * Tests for BICA.
+*/
 #include "bica.h"
 
 int num_tests = 0;
@@ -130,6 +142,37 @@ void test_6(){
     bica_on_nullptr = _bicad_on_nullptr;
 }
 
+void test_7(){
+    test_start(7, "bicad handshakes");
+    printf("BICA_VERSION: %d\n", BICA_VERSION);
+    unsigned char buf[BICA_BUFFER_LEN];
+    if(bica_get_function(BICAM_HANDSHAKE_REQ, BICAT_CREATE)(buf, BICA_BUFFER_LEN, nullptr) == 0){
+        printf("Failed to generate handshake req\n");
+        test_end(0);
+        return;
+    }
+    print_bica_arr(buf, BICA_BUFFER_LEN);
+    if(buf[0]!= BICAM_HANDSHAKE_REQ || buf[1] != BICA_VERSION){
+        printf("Incorrect Buffer handshake req, fail\n");
+        test_end(0);
+        return;
+    }
+
+    if(bica_get_function(BICAM_HANDSHAKE_REP, BICAT_CREATE)(buf, BICA_BUFFER_LEN, nullptr) == 0){
+        printf("Failed to generate handshake rep\n");
+        test_end(0);
+        return;
+    }
+    print_bica_arr(buf, BICA_BUFFER_LEN);
+    if(buf[0]!= BICAM_HANDSHAKE_REP || buf[1] != BICA_VERSION){
+        printf("Incorrect Buffer handshake rep, fail\n");
+        test_end(0);
+        return;
+    }
+
+    test_end(1);
+}
+
 int main(int argc, char* argv[]){
     test_1();
     test_2();
@@ -137,4 +180,5 @@ int main(int argc, char* argv[]){
     test_4();
     test_5();
     test_6();
+    test_7();
 }

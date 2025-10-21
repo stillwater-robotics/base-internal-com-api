@@ -6,10 +6,13 @@
  *  
  * bica.h
  * Created: Oct 2, 2025
- * Last Edited: Oct 10, 2025
+ * Last Edited: Oct 20, 2025
  * 
  * This file defines messages used in the internal communications system.
 */
+#ifndef BICA_H
+#define BICA_H
+
 /* Check if C or C++ */
 #ifndef __cpluscplus
 /* Compiling as C */
@@ -46,9 +49,8 @@
  // CONTROL MESSAGES
 #define BICAM_QUERY_CONTROL_REP 0x41
 #define BICAM_QUERY_CONTROL_REQ 0x42
-#define BICAM_SEND_STATE_ERROR_UPD 0x44
-#define BICAM_SEND_STATE_DESIRED_UPD 0x45
-#define BICAM_SEND_STATE_ESTIMATE_UPD 0x46
+#define BICAM_SEND_CONTROL_REP 0x44
+#define BICAM_SEND_CONTROL_UPD 0x45
 
 //ADMIN MESSAGES
 #define BICAM_HANDSHAKE_REP 0xE1
@@ -75,10 +77,12 @@ _bica_m_function_ptr create, process;
 // bicad stands for BICA Default
 void _bicad_on_nullptr(unsigned char message_id, int type, int id_found);
 int _bicad_testblank_create(unsigned char * buffer, int buffer_len, void* data);
+int _bicad_handshake_rep_create(unsigned char * buffer, int buffer_len, void* data);
+int _bicad_handshake_req_create(unsigned char * buffer, int buffer_len, void* data);
 
 // ADD NEW MESSAGES HERE, WITH nullptr ENTRIES!
 // KEEP THIS SORTED.
-#define BICA_NUM_MESSAGE_IDS 18 //Increment with new messages
+#define BICA_NUM_MESSAGE_IDS 17 //Increment with new messages
 struct _bica_m_lookup_entry _bica_m_lookup_table[] = {
 {BICAM_SAFETY_OVERRIDE_REP,     nullptr,                    nullptr},
 {BICAM_SAFETY_OVERRIDE_REQ,     nullptr,                    nullptr},
@@ -91,11 +95,10 @@ struct _bica_m_lookup_entry _bica_m_lookup_table[] = {
 {BICAM_SENSOR_REQ,              nullptr,                    nullptr},
 {BICAM_QUERY_CONTROL_REP,       nullptr,                    nullptr},
 {BICAM_QUERY_CONTROL_REQ,       nullptr,                    nullptr},
-{BICAM_SEND_STATE_ERROR_UPD,    nullptr,                    nullptr},
-{BICAM_SEND_STATE_DESIRED_UPD,  nullptr,                    nullptr},
-{BICAM_SEND_STATE_ESTIMATE_UPD, nullptr,                    nullptr},
-{BICAM_HANDSHAKE_REP,           nullptr,                    nullptr},
-{BICAM_HANDSHAKE_REQ,           nullptr,                    nullptr},
+{BICAM_SEND_CONTROL_REP,        nullptr,                    nullptr},
+{BICAM_SEND_CONTROL_UPD,        nullptr,                    nullptr},
+{BICAM_HANDSHAKE_REP,           _bicad_handshake_rep_create,nullptr},
+{BICAM_HANDSHAKE_REQ,           _bicad_handshake_req_create,nullptr},
 {BICAM_TEST_NULLPTR,            nullptr,                    nullptr},
 {BICAM_TEST_DUMMY,              _bicad_testblank_create,    nullptr}
 };
@@ -160,9 +163,29 @@ _bica_m_function_ptr bica_get_function(unsigned char message_id, int type){
 }
 
 int _bicad_testblank_create(unsigned char * buffer, int buffer_len, void* data){
-  if(buffer_len > 0) buffer[0] = 0xFF;
+  if(buffer_len > 0) buffer[0] = BICAM_TEST_DUMMY;
   for(int i = 1; i < buffer_len; i++)
     buffer[i] = (unsigned char) i;
+  return 1;
+}
+
+int _bicad_handshake_rep_create(unsigned char * buffer, int buffer_len, void* data){
+  if(buffer_len < 2) return 0;
+    buffer[0] = BICAM_HANDSHAKE_REP;
+    buffer[1] = BICA_VERSION;
+
+  for(int i = 2; i < buffer_len; i++)
+    buffer[i] = 0x00;
+  return 1;
+}
+
+int _bicad_handshake_req_create(unsigned char * buffer, int buffer_len, void* data){
+  if(buffer_len < 2) return 0;
+    buffer[0] = BICAM_HANDSHAKE_REQ;
+    buffer[1] = BICA_VERSION;
+
+  for(int i = 2; i < buffer_len; i++)
+    buffer[i] = 0x00;
   return 1;
 }
 
@@ -171,3 +194,5 @@ void _bicad_on_nullptr(unsigned char message_id, int type, int id_found){
   printf("BICA Lookup failed to find function %2x, %s. \n", message_id, type == BICAT_CREATE? "CREATE": "PROCESS");
 #endif
 }
+
+#endif

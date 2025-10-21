@@ -86,7 +86,6 @@ bica_func to_add    // Pointer to/address of your function
 return (int)        // Whether or not it succeeded
 ```
 
-
 ## Message IDs
 #### `0x0X` Safety Messages
 | ID     | Name                    | Direction | Description             | 
@@ -110,9 +109,8 @@ return (int)        // Whether or not it succeeded
 | ------ | ----------------------- | --------- | ----------------------- |
 | `0x41` | Query Control Rep       | From BCU  | Replies to `0x42` with the requested stored control data. |
 | `0x42` | Query Control Req       | To BCU    | Requests for the BCU to send over some stored control data. |
-| `0x44` | Send State Error Upd    | To BCU    | To be rethought |
-| `0x45` | Send State Desired Upd  | To BCU    | To be rethought |
-| `0x46` | Send State Estimate Upd | To BCU    | To be rethought |
+| `0x44` | Send Control Rep        | From BCU  | Reply sent after receiving a full control frame. |
+| `0x45` | Send Control Upd        | To BCU    | Sent as a frame (series of messages) updating multiple control inputs. |
 
 #### `0xEX` Admin Messages
 | ID     | Name                    | Direction | Description             | 
@@ -126,10 +124,18 @@ return (int)        // Whether or not it succeeded
 | `0xFE` | Reserved                | All       | Used to test nullptr returns on lookup. |
 | `0xFF` | Test Dummy Message      | All       | Test Message filled with sequential data. |
 
-## Message Bitmaps
-Bit numbers are big-endian. Byte numbers start at 1, as Byte 0 is reserved for the Message ID for all messages.
-| ID     | Bitmap             | 
-| ------ | -------------------|
-| `0xFF` | Byte N: `N` for each byte (sequential count)|
+## Recommended Message Bitmaps
+Bit numbers are big-endian. Byte numbers start at 1, as Byte 0 is reserved for the Message ID for all messages. \
+**`BX`** represents Byte X. \
+**`BX 0xF0`** represents the bits masked by `0xF0` at Byte X, etc. \
+**`N`** Represents the last Byte
+| ID     | Name                    | Bitmap             | 
+| ------ | ----------------------- | -------------------|
+| **CONTROL** | |
+| `0x44` | Send Control Rep        | **`B1 0x3`:** 2 Bit Rolling Count of the replied to frame. <br> **`B2`** combined flags of all received control inputs. |
+| `0x45` | Send Control Upd        | **`B1 0x3`:** 2 Bit Rolling Count, from `0` to `3` consistent to all messages in a frame. <br> **`B1 0x4`:** boolean, true if more messages are left in the frame. <br> **`B1 0xF0`:** Number of bytes in the transmitted control input <br> **`B2`:** Type of control input to set as a flag. <br> **`B3...BN`:** Big-Endian data to be sent/read into the control input. |
+| **TEST** | |
+| `0xFE` | Reserved | Reserved for unit tests to use. No assigned bitmap. |
+| `0xFF` | Test Dummy Message      | **`B1...BN`:** written as the number `i`, where i is the current Byte Number. |
 
 ## Included Functions
