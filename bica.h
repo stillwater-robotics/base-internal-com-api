@@ -10,6 +10,8 @@
  * 
  * This file defines messages used in the internal communications system.
 */
+#define BICA_H
+#ifndef BICA_H
 /* Check if C or C++ */
 #ifndef __cpluscplus
 /* Compiling as C */
@@ -167,3 +169,4 @@ void _bicad_on_nullptr(unsigned char message_id, int type, int id_found){
   printf("BICA Lookup failed to find function %2x, %s. \n", message_id, type == BICAT_CREATE? "CREATE": "PROCESS");
 #endif
 }
+#endif
