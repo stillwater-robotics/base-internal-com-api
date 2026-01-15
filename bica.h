@@ -6,17 +6,18 @@
  *  
  * bica.h
  * Created: Oct 2, 2025
- * Last Edited: Oct 10, 2025
+ * Last Edited: Oct 20, 2025
  * 
  * This file defines messages used in the internal communications system.
 */
-#define BICA_H
 #ifndef BICA_H
+#define BICA_H
+
 /* Check if C or C++ */
 #ifndef __cpluscplus
 /* Compiling as C */
-  #define nullptr NULL
   #include <stdlib.h>
+  #define nullptr NULL
 #else
 /* Compiling as C++ */
   #include <cstdlib>
@@ -29,7 +30,7 @@
 
 /* Define Constants */
 #define BICA_VERSION 1
-#define BICA_BUFFER_LEN 8
+#define BICA_BUFFER_LEN 9
 
  //##### Message ID Definitions #####
  // SAFETY
@@ -48,22 +49,23 @@
  // CONTROL MESSAGES
 #define BICAM_QUERY_CONTROL_REP 0x41
 #define BICAM_QUERY_CONTROL_REQ 0x42
-#define BICAM_SEND_STATE_ERROR_UPD 0x44
-#define BICAM_SEND_STATE_DESIRED_UPD 0x45
-#define BICAM_SEND_STATE_ESTIMATE_UPD 0x46
+#define BICAM_SEND_CONTROL_REP 0x44
+#define BICAM_SEND_CONTROL_UPD 0x45
 
 //ADMIN MESSAGES
 #define BICAM_HANDSHAKE_REP 0xE1
 #define BICAM_HANDSHAKE_REQ 0xE2
 
 //TEST MESSAGES
-#define BICAM_TEST_BLANK 0xFF
+#define BICAM_TEST_NULLPTR 0xFE
+#define BICAM_TEST_DUMMY 0xFF
 
 
 //##### Function Hook Definitions #####
 #define BICAT_CREATE 0 
 #define BICAT_PROCESS 1
 typedef int (*_bica_m_function_ptr)(unsigned char* buffer, int buffer_len, void* data);
+typedef _bica_m_function_ptr bica_func;
 _bica_m_function_ptr bica_get_function(unsigned char message_id, int type);
 
 struct _bica_m_lookup_entry{
@@ -75,6 +77,8 @@ _bica_m_function_ptr create, process;
 // bicad stands for BICA Default
 void _bicad_on_nullptr(unsigned char message_id, int type, int id_found);
 int _bicad_testblank_create(unsigned char * buffer, int buffer_len, void* data);
+int _bicad_handshake_rep_create(unsigned char * buffer, int buffer_len, void* data);
+int _bicad_handshake_req_create(unsigned char * buffer, int buffer_len, void* data);
 
 // ADD NEW MESSAGES HERE, WITH nullptr ENTRIES!
 // KEEP THIS SORTED.
@@ -91,12 +95,12 @@ struct _bica_m_lookup_entry _bica_m_lookup_table[] = {
 {BICAM_SENSOR_REQ,              nullptr,                    nullptr},
 {BICAM_QUERY_CONTROL_REP,       nullptr,                    nullptr},
 {BICAM_QUERY_CONTROL_REQ,       nullptr,                    nullptr},
-{BICAM_SEND_STATE_ERROR_UPD,    nullptr,                    nullptr},
-{BICAM_SEND_STATE_DESIRED_UPD,  nullptr,                    nullptr},
-{BICAM_SEND_STATE_ESTIMATE_UPD, nullptr,                    nullptr},
-{BICAM_HANDSHAKE_REP,           nullptr,                    nullptr},
-{BICAM_HANDSHAKE_REQ,           nullptr,                    nullptr},
-{BICAM_TEST_BLANK,              _bicad_testblank_create,    nullptr}
+{BICAM_SEND_CONTROL_REP,        nullptr,                    nullptr},
+{BICAM_SEND_CONTROL_UPD,        nullptr,                    nullptr},
+{BICAM_HANDSHAKE_REP,           _bicad_handshake_rep_create,nullptr},
+{BICAM_HANDSHAKE_REQ,           _bicad_handshake_req_create,nullptr},
+{BICAM_TEST_NULLPTR,            nullptr,                    nullptr},
+{BICAM_TEST_DUMMY,              _bicad_testblank_create,    nullptr}
 };
 
 // Called when nothing is found.
@@ -159,8 +163,29 @@ _bica_m_function_ptr bica_get_function(unsigned char message_id, int type){
 }
 
 int _bicad_testblank_create(unsigned char * buffer, int buffer_len, void* data){
-  for(int i = 0; i < buffer_len; i++)
+  if(buffer_len > 0) buffer[0] = BICAM_TEST_DUMMY;
+  for(int i = 1; i < buffer_len; i++)
     buffer[i] = (unsigned char) i;
+  return 1;
+}
+
+int _bicad_handshake_rep_create(unsigned char * buffer, int buffer_len, void* data){
+  if(buffer_len < 2) return 0;
+    buffer[0] = BICAM_HANDSHAKE_REP;
+    buffer[1] = BICA_VERSION;
+
+  for(int i = 2; i < buffer_len; i++)
+    buffer[i] = 0x00;
+  return 1;
+}
+
+int _bicad_handshake_req_create(unsigned char * buffer, int buffer_len, void* data){
+  if(buffer_len < 2) return 0;
+    buffer[0] = BICAM_HANDSHAKE_REQ;
+    buffer[1] = BICA_VERSION;
+
+  for(int i = 2; i < buffer_len; i++)
+    buffer[i] = 0x00;
   return 1;
 }
 
