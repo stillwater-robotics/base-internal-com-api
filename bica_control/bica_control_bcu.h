@@ -7,24 +7,26 @@
  *  
  * bica_control.h
  * Created: Oct 20, 2025
- * Last Edited: Oct 20, 2025
+ * Last Edited: Mar 14 2026
  * 
  * This file defines control message creation used in the internal communications system.
 */
-#ifndef BICA_CONTROL_H
+#ifndef BICA_CONTROL_BCU_H
+#define BICA_CONTROL_BCU_H
 #include "../bica.h"
 
-//0x41 & 0x42
+#include "stdint.h"
+#include "bica_control_common.h"
 
-//0x45 
+
+_control_buffer* front;
+_control_buffer* back;
 
 
-//0x46 bica_send_control_upd
-struct bica_struct_send_control_upd{
-    int rolling_count;
-    int more_in_frame;
-    int resolution;
-    uint64_t data;
-};
+// 0x44 and 0x45
+
+int _bica_0x44_control_rep_create(unsigned char * buffer, int buffer_len, void* data){
+    if(buffer_len < )
+}
 
 #endif

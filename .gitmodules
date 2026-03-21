@@ -1,0 +1,3 @@
+[submodule "bica_control/controller"]
+	path = bica_control/controller
+	url = https://github.com/stillwater-robotics/controller.git
