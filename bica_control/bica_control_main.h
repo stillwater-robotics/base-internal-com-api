@@ -14,11 +14,16 @@
 #ifndef BICA_CONTROL_MAIN_H
 #define BICA_CONTROL_MAIN_H
 #include "bica_control_common.h"
-#include "controller/include/common.h"
 
-_control_buffer* current_window = nullptr;
+// Usable Functions
+int bica_init_main_control(_bica_ctrl_send_callback _callback);
+int bica_create_control_buffer(struct _control_buffer **buf_ptr, Input input);
+int bica_create_control_buffer(struct _control_buffer **buf_ptr, State current, State desired, Pose acceleration);
 
-int _bica_create_control_buffer(struct _control_buffer **buf_ptr, Input input){
+_control_buffer*         current_window = nullptr;
+_bica_ctrl_send_callback callback       = nullptr;
+
+int bica_create_control_buffer(struct _control_buffer **buf_ptr, Input input){
     (*buf_ptr) = (_control_buffer*) calloc(1, sizeof(struct _control_buffer));
 
     if((*buf_ptr) == nullptr)
@@ -39,7 +44,7 @@ int _bica_create_control_buffer(struct _control_buffer **buf_ptr, Input input){
     return EOK;
 }
 
-int _bica_create_control_buffer(struct _control_buffer **buf_ptr, State current, State desired, Pose acceleration){
+int bica_create_control_buffer(struct _control_buffer **buf_ptr, State current, State desired, Pose acceleration){
     (*buf_ptr) = (_control_buffer*) calloc(1, sizeof(struct _control_buffer));
 
     if((*buf_ptr) == nullptr)
@@ -82,7 +87,35 @@ int _bica_create_control_buffer(struct _control_buffer **buf_ptr, State current,
 int _bica_0x44_control_rep_process(unsigned char * buffer, int buffer_len, void* data){
     if(buffer_len < BICA_BUFFER_LEN)
         return EBADBUFFER;
+
+    if(callback == nullptr)
+        return EINVALIDSETUP;
+
     uint8_t rc = (buffer[1] >> 6) & 0b11;
+    if(rc != current_window->rolling_count)
+        return EWINDOWMISMATCH;
+    
+    uint32_t processed = 0;
+    processed |= ((uint32_t)buffer[2] & 0b111) << 16;
+    processed |= ((uint32_t)buffer[3] & 0xFF) << 8;
+    processed |= ((uint32_t)buffer[4] & 0xFF);
+
+    current_window -> update_status = processed;
+
+    if(current_window -> control_type == CTRL_TYPE_INPUTS
+        && processed == CTRL_COMPLETE_INPUTS)
+        return EOK;
+    if(current_window -> control_type == CTRL_TYPE_STATES
+        && processed == CTRL_COMPLETE_STATES)
+        return EOK;
+
+    uint8_t callback_buffer[BICA_BUFFER_LEN];
+    _bica_m_function_ptr _func = bica_get_function(0x45, BICAT_PROCESS);
+    if(_func == nullptr)
+        return EINVALIDSETUP;
+    int process_return = _func(callback_buffer, BICA_BUFFER_LEN, nullptr);
+    if(process_return != EOK) return process_return;
+    callback(callback_buffer, BICA_BUFFER_LEN);
     
     return EOK;
 }
@@ -105,7 +138,7 @@ int _bica_0x45_control_upd_create(unsigned char * buffer, int buffer_len, void* 
     if(current_window->control_type == CTRL_TYPE_INPUTS)
         num_inputs = INPUT_LENGTH;
     else if (current_window->control_type == CTRL_TYPE_STATES)
-        num_inputs = 2*STATE_LENGTH+ACC_LENGTH;
+        num_inputs = CTRL_BUFFER_SIZE;
     
     uint8_t  total_packed = 0;
     uint32_t vars_packed = 0;
@@ -116,10 +149,10 @@ int _bica_0x45_control_upd_create(unsigned char * buffer, int buffer_len, void* 
             continue;
         
         vars_packed |= 1 << (num_inputs - i);
-        buffer[4*total_packed+3] = 0xFF & (current_window->data[i]);
-        buffer[4*total_packed+4] = 0xFF & (current_window->data[i] >> 8);
-        buffer[4*total_packed+5] = 0xFF & (current_window->data[i] >> 16);
-        buffer[4*total_packed+6] = 0xFF & (current_window->data[i] >> 24);
+        buffer[4*total_packed+3] = 0xFF & (current_window->data[i] >> 24);
+        buffer[4*total_packed+4] = 0xFF & (current_window->data[i] >> 16);
+        buffer[4*total_packed+5] = 0xFF & (current_window->data[i] >> 8);
+        buffer[4*total_packed+6] = 0xFF & (current_window->data[i] );
 
         total_packed ++;
         if(total_packed >= VAR_PER_MSG)
@@ -132,12 +165,16 @@ int _bica_0x45_control_upd_create(unsigned char * buffer, int buffer_len, void* 
     return EOK;
 }
 
-int _bica_init_control_main(){
-    // Fail if floats are not size 4. Yeah, we got not better solution on this one LMAO
+int bica_init_main_control(_bica_ctrl_send_callback _callback){
+    // Fail if floats are not size 4. Yeah, we got no better solution on this one LMAO
     if( sizeof(float) != 4 )
         return EFLOATSIZE;
-    
-    // Setup our function hooks (yippee)
+
+    // Fail if no valid function callback is set.
+    if(_callback == nullptr)
+        return EINVALIDSETUP;
+
+    callback = _callback;
     bica_set_hook(0x44, BICAT_PROCESS, _bica_0x44_control_rep_process);
     bica_set_hook(0x45, BICAT_CREATE, _bica_0x45_control_upd_create);
 }

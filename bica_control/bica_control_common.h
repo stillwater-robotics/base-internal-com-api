@@ -18,14 +18,17 @@
 #include "stdint.h"
 #endif
 #include "../bica.h"
+#include "controller/include/common.h"
 
 #define FLOAT_AS_LONG(num) *((uint32_t*)((float*)&num))
 #define LONG_AS_FLOAT(num) *((float*)((uint32_t*)&num))
 
-#define EOK         0x0
-#define EFLOATSIZE  0x1
-#define EMALLOC     0x2
-#define EBADBUFFER  0x3
+#define EOK             0x0
+#define EFLOATSIZE      0x1
+#define EMALLOC         0x2
+#define EBADBUFFER      0x3
+#define EWINDOWMISMATCH 0x4
+#define EINVALIDSETUP   0x5
 
 // State Constructor
 #define STATE_LENGTH 8
@@ -35,12 +38,20 @@
 #define CTRL_TYPE_STATES 0b01
 #define CTRL_TYPE_INPUTS 0b10
 
+#define CTRL_COMPLETE_STATES 0x03FFFF
+#define CTRL_COMPLETE_INPUTS 0x111
+
+#define CTRL_BUFFER_SIZE 2 * STATE_LENGTH + ACC_LENGTH
+
 struct _control_buffer{
     uint8_t     rolling_count;
     uint8_t     control_type;
     uint32_t    update_status;
-    uint32_t    data[2 * STATE_LENGTH + ACC_LENGTH];
+    uint32_t    data[CTRL_BUFFER_SIZE];
 };
+
+typedef int (*_bica_ctrl_send_callback)(unsigned char* buffer, int buffer_len);
+typedef int (*_update_controller_callback)(State current, State desired, Pose acceleration);
 
 #define VAR_PER_MSG (BICA_BUFFER_LEN-4)/4
 
