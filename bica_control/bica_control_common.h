@@ -20,6 +20,7 @@
 #include "../bica.h"
 #include "controller/include/common.h"
 
+// great stuff going on here lmfao
 #define FLOAT_AS_LONG(num) *((uint32_t*)((float*)&num))
 #define LONG_AS_FLOAT(num) *((float*)((uint32_t*)&num))
 
@@ -38,8 +39,8 @@
 #define CTRL_TYPE_STATES 0b01
 #define CTRL_TYPE_INPUTS 0b10
 
-#define CTRL_COMPLETE_STATES 0x03FFFF
-#define CTRL_COMPLETE_INPUTS 0x111
+#define CTRL_COMPLETE_STATES 0x07FFFF
+#define CTRL_COMPLETE_INPUTS 0b111
 
 #define CTRL_BUFFER_SIZE 2 * STATE_LENGTH + ACC_LENGTH
 
@@ -51,7 +52,8 @@ struct _control_buffer{
 };
 
 typedef int (*_bica_ctrl_send_callback)(unsigned char* buffer, int buffer_len);
-typedef int (*_update_controller_callback)(State current, State desired, Pose acceleration);
+typedef int (*_update_controller_callback_states)(State current, State desired, Pose acceleration);
+typedef int (*_update_controller_callback_inputs)(Input input);
 
 #define VAR_PER_MSG (BICA_BUFFER_LEN-4)/4
 

@@ -37,9 +37,9 @@ int bica_create_control_buffer(struct _control_buffer **buf_ptr, Input input){
     (*buf_ptr) -> update_status = 0;
     (*buf_ptr) -> control_type = CTRL_TYPE_INPUTS;
     
-    (*buf_ptr) -> data[0] = FLOAT_AS_LONG(input.ballast);
-    (*buf_ptr) -> data[1] = FLOAT_AS_LONG(input.left);
-    (*buf_ptr) -> data[2] = FLOAT_AS_LONG(input.right);
+    (*buf_ptr) -> data[0] = FLOAT_AS_LONG(input.left);
+    (*buf_ptr) -> data[1] = FLOAT_AS_LONG(input.right);
+    (*buf_ptr) -> data[2] = FLOAT_AS_LONG(input.ballast);
     
     return EOK;
 }
@@ -96,9 +96,9 @@ int _bica_0x44_control_rep_process(unsigned char * buffer, int buffer_len, void*
         return EWINDOWMISMATCH;
     
     uint32_t processed = 0;
-    processed |= ((uint32_t)buffer[2] & 0b111) << 16;
-    processed |= ((uint32_t)buffer[3] & 0xFF) << 8;
-    processed |= ((uint32_t)buffer[4] & 0xFF);
+    processed |= ((uint32_t)buffer[1] & 0b111) << 16;
+    processed |= ((uint32_t)buffer[2] & 0xFF) << 8;
+    processed |= ((uint32_t)buffer[3] & 0xFF);
 
     current_window -> update_status = processed;
 
@@ -110,7 +110,7 @@ int _bica_0x44_control_rep_process(unsigned char * buffer, int buffer_len, void*
         return EOK;
 
     uint8_t callback_buffer[BICA_BUFFER_LEN];
-    _bica_m_function_ptr _func = bica_get_function(0x45, BICAT_PROCESS);
+    _bica_m_function_ptr _func = bica_get_function(BICAM_SEND_CONTROL_UPD, BICAT_CREATE);
     if(_func == nullptr)
         return EINVALIDSETUP;
     int process_return = _func(callback_buffer, BICA_BUFFER_LEN, nullptr);
@@ -130,7 +130,7 @@ int _bica_0x45_control_upd_create(unsigned char * buffer, int buffer_len, void* 
         current_window = (_control_buffer*) data;
     }
 
-    buffer[0] = 0x45;
+    buffer[0] = BICAM_SEND_CONTROL_UPD;
     buffer[1] = ((current_window->rolling_count & 0b11) << 6)
               | ((current_window->control_type & 0b11) << 4);
 
@@ -145,21 +145,21 @@ int _bica_0x45_control_upd_create(unsigned char * buffer, int buffer_len, void* 
 
     for(uint16_t i = 1; i <= num_inputs; i++){
         // Check if the specific recieved bit is marked as received. If so, we can continue.
-        if((current_window->update_status << (num_inputs - i)) & 0b1 == 1)
+        if(((current_window->update_status >> (num_inputs - i)) & 0b1) == 1)
             continue;
         
-        vars_packed |= 1 << (num_inputs - i);
-        buffer[4*total_packed+3] = 0xFF & (current_window->data[i] >> 24);
-        buffer[4*total_packed+4] = 0xFF & (current_window->data[i] >> 16);
-        buffer[4*total_packed+5] = 0xFF & (current_window->data[i] >> 8);
-        buffer[4*total_packed+6] = 0xFF & (current_window->data[i] );
-
+        vars_packed |= 1l << (num_inputs - i);
+        buffer[4*total_packed+4] = 0xFF & (current_window->data[i-1] >> 24);
+        buffer[4*total_packed+5] = 0xFF & (current_window->data[i-1] >> 16);
+        buffer[4*total_packed+6] = 0xFF & (current_window->data[i-1] >> 8);
+        buffer[4*total_packed+7] = 0xFF & (current_window->data[i-1] );
+        
         total_packed ++;
         if(total_packed >= VAR_PER_MSG)
             break;
     }
-    buffer[1] |= 0b111 & (vars_packed <<16);
-    buffer[2]  = 0xFF  & (vars_packed <<8);
+    buffer[1] |= 0b111 & (vars_packed >>16);
+    buffer[2]  = 0xFF  & (vars_packed >>8);
     buffer[3]  = 0xFF  & (vars_packed);
 
     return EOK;
@@ -175,8 +175,9 @@ int bica_init_main_control(_bica_ctrl_send_callback _callback){
         return EINVALIDSETUP;
 
     callback = _callback;
-    bica_set_hook(0x44, BICAT_PROCESS, _bica_0x44_control_rep_process);
-    bica_set_hook(0x45, BICAT_CREATE, _bica_0x45_control_upd_create);
+    bica_set_hook(BICAM_SEND_CONTROL_REP, BICAT_PROCESS, _bica_0x44_control_rep_process);
+    bica_set_hook(BICAM_SEND_CONTROL_UPD, BICAT_CREATE, _bica_0x45_control_upd_create);
+    return EOK;
 }
 
 #endif
