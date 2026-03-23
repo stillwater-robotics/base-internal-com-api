@@ -30,7 +30,7 @@
 
 /* Define Constants */
 #define BICA_VERSION 1
-#define BICA_BUFFER_LEN 9
+#define BICA_BUFFER_LEN 16
 
  //##### Message ID Definitions #####
  // SAFETY
