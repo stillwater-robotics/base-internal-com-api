@@ -6,7 +6,7 @@
  *  
  * bica_test.c
  * Created: Oct 10, 2025
- * Last Edited: Oct 20, 2025
+ * Last Edited: Mar 24, 2026
  * 
  * Tests for BICA.
 */

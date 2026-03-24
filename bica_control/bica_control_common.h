@@ -5,9 +5,9 @@
  * #...[+(____________)          -2025-       #
  * #       C_________/                        #
  *  
- * bica_control.h
+ * bica_control_common.h
  * Created: Oct 20, 2025
- * Last Edited: Mar 14 2026
+ * Last Edited: Mar 24 2026
  * 
  * This file defines control message constants used by both sides.
 */

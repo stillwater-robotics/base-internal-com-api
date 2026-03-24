@@ -5,9 +5,9 @@
  * #...[+(____________)          -2025-       #
  * #       C_________/                        #
  *  
- * bica_control.h
- * Created: Oct 20, 2025
- * Last Edited: Mar 14 2026
+ * bica_control_bcu.h
+ * Created: Mar 14, 2025
+ * Last Edited: Mar 24 2026
  * 
  * This file defines control message creation used in the internal communications system.
 */
