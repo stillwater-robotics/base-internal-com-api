@@ -24,12 +24,15 @@
 #define FLOAT_AS_LONG(num) *((uint32_t*)((float*)&num))
 #define LONG_AS_FLOAT(num) *((float*)((uint32_t*)&num))
 
+#ifndef EOK
 #define EOK             0x0
-#define EFLOATSIZE      0x1
-#define EMALLOC         0x2
-#define EBADBUFFER      0x3
-#define EWINDOWMISMATCH 0x4
-#define EINVALIDSETUP   0x5
+#endif
+
+#define EFLOATSIZE      0x24
+#define EMALLOC         0x25
+#define EBADBUFFER      0x26
+#define EWINDOWMISMATCH 0x27
+#define EINVALIDSETUP   0x28
 
 // State Constructor
 #define STATE_LENGTH 8
