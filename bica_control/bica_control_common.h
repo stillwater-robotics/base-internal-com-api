@@ -18,7 +18,9 @@
 #include "stdint.h"
 #endif
 #include "../bica.h"
+#ifndef COMMON_HEADER
 #include "controller/include/common.h"
+#endif
 
 // great stuff going on here lmfao
 #define FLOAT_AS_LONG(num) *((uint32_t*)((float*)&num))
