@@ -47,8 +47,9 @@
 #define BICAM_SENSOR_REQ 0x25
 
  // CONTROL MESSAGES
-#define BICAM_QUERY_CONTROL_REP 0x41
-#define BICAM_QUERY_CONTROL_REQ 0x42
+#define BICAM_SEND_INPUT_REP 0x41
+#define BICAM_SEND_INPUT_UPD 0x42
+#define BICAM_REQ_INPUT_UPD 0x43
 #define BICAM_SEND_CONTROL_REP 0x44
 #define BICAM_SEND_CONTROL_UPD 0x45
 
@@ -66,6 +67,7 @@
 #define BICAT_PROCESS 1
 typedef int (*_bica_m_function_ptr)(unsigned char* buffer, int buffer_len, void* data);
 typedef _bica_m_function_ptr bica_func;
+typedef _bica_m_function_ptr bica_function;
 _bica_m_function_ptr bica_get_function(unsigned char message_id, int type);
 
 struct _bica_m_lookup_entry{
@@ -82,7 +84,7 @@ int _bicad_handshake_req_create(unsigned char * buffer, int buffer_len, void* da
 
 // ADD NEW MESSAGES HERE, WITH nullptr ENTRIES!
 // KEEP THIS SORTED.
-#define BICA_NUM_MESSAGE_IDS 17 //Increment with new messages
+#define BICA_NUM_MESSAGE_IDS 18 //Increment with new messages
 struct _bica_m_lookup_entry _bica_m_lookup_table[] = {
 {BICAM_SAFETY_OVERRIDE_REP,     nullptr,                    nullptr},
 {BICAM_SAFETY_OVERRIDE_REQ,     nullptr,                    nullptr},
@@ -93,8 +95,9 @@ struct _bica_m_lookup_entry _bica_m_lookup_table[] = {
 {BICAM_COLLISION_IND,           nullptr,                    nullptr},
 {BICAM_SENSOR_REP,              nullptr,                    nullptr},
 {BICAM_SENSOR_REQ,              nullptr,                    nullptr},
-{BICAM_QUERY_CONTROL_REP,       nullptr,                    nullptr},
-{BICAM_QUERY_CONTROL_REQ,       nullptr,                    nullptr},
+{BICAM_SEND_INPUT_REP,          nullptr,                    nullptr},
+{BICAM_SEND_INPUT_UPD,          nullptr,                    nullptr},
+{BICAM_REQ_INPUT_UPD,           nullptr,                    nullptr},
 {BICAM_SEND_CONTROL_REP,        nullptr,                    nullptr},
 {BICAM_SEND_CONTROL_UPD,        nullptr,                    nullptr},
 {BICAM_HANDSHAKE_REP,           _bicad_handshake_rep_create,nullptr},
@@ -149,7 +152,7 @@ int bica_set_hook(int message_id, int type, _bica_m_function_ptr to_add){
   return 1;
 }
 
-_bica_m_function_ptr bica_get_function(unsigned char message_id, int type){
+bica_function bica_get_function(unsigned char message_id, int type){
   _bica_m_function_ptr to_return = nullptr;
 
   int index = _bica_get_index(message_id);

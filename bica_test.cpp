@@ -178,8 +178,7 @@ void test_7(){
 /* ######################### */
 
 #include "bica_control/controller/include/common.h"
-#include "bica_control/bica_control_bcu.h"
-#include "bica_control/bica_control_main.h"
+#include "bica_control/bica_control.h"
 
 uint8_t transmission_buffer[BICA_BUFFER_LEN];
 int transmit_flag = 0;
@@ -187,7 +186,7 @@ int transmit_flag = 0;
 void test_8(){
     test_start(8, "BICA bcu control setup");
     int success_flag;
-    success_flag = bica_init_bcu_control(nullptr,
+    success_flag = init_bica_control_bcu(nullptr,
                                          [](State x, State y, Pose a)->int{return 1;}, 
                                          [](Input i)->int{return 1;}
                                         );
@@ -197,27 +196,7 @@ void test_8(){
         return;
     }
 
-    success_flag = bica_init_bcu_control([](unsigned char * buffer, int buf_len)->int{return 1;}, 
-                                         nullptr, 
-                                         [](Input i)->int{return 1;}
-                                        );
-    if(success_flag == EOK){
-        printf("Fail: Allowed null bcu init _ctrl_callback_states\n");
-        test_end(0);
-        return;
-    }
-
-    success_flag = bica_init_bcu_control([](unsigned char * buffer, int buf_len)->int{return 1;}, 
-                                         nullptr, 
-                                         [](Input i)->int{return 1;}
-                                        );
-    if(success_flag == EOK){
-        printf("Fail: Allowed null bcu init _ctrl_callback_inputs\n");
-        test_end(0);
-        return;
-    }
-
-    success_flag = bica_init_bcu_control([](unsigned char * buffer, int buf_len)->int{return 1;}, 
+    success_flag = init_bica_control_bcu([](unsigned char * buffer, int buf_len)->int{return 1;}, 
                                          [](State x, State y, Pose a)->int{return 1;}, 
                                          [](Input i)->int{return 1;});
     if(success_flag != EOK){
@@ -235,14 +214,14 @@ void test_8(){
 void test_9(){
     test_start(9, "BICA main control setup");
     int success_flag;
-    success_flag = bica_init_main_control(nullptr);
+    success_flag = init_bica_control_main(nullptr, nullptr, nullptr);
     if(success_flag == EOK){
         printf("Allowed null main init _send_callback\n");
         test_end(0);
         return;
     }
 
-    success_flag = bica_init_main_control([](unsigned char * buffer, int buf_len)->int{return 1;});
+    success_flag = init_bica_control_main([](unsigned char * buffer, int buf_len)->int{return 1;}, nullptr, nullptr);
     if(success_flag != EOK){
         printf("Fail: disallowed correct bica_init_main_control with errno %d\n", success_flag);
         test_end(0);
@@ -326,13 +305,13 @@ void test_10(){
     };
 
 
-    bica_init_main_control(transmit_func);
-    bica_init_bcu_control(transmit_func, state_eval, input_eval);
+    init_bica_control_main(transmit_func, nullptr, nullptr);
+    init_bica_control_bcu(transmit_func, state_eval, input_eval);
 
     _bica_m_function_ptr func1 =  bica_get_function(BICAM_SEND_CONTROL_UPD, BICAT_CREATE);
     if(func1 != nullptr){
         _control_buffer *buf;
-        bica_create_control_buffer(&buf, current, desired, accel);
+        create_bica_control_buffer(&buf, current, desired, accel);
         printf("Processing 0x45C ");
         func1(transmission_buffer, BICA_BUFFER_LEN, buf);
         print_bica_arr(transmission_buffer, BICA_BUFFER_LEN);
@@ -409,13 +388,13 @@ void test_11(){
         printf("Recvd.: i%f %f %f \n", _i.left, _i.right, _i.ballast);
     };
 
-    bica_init_main_control(transmit_func);
-    bica_init_bcu_control(transmit_func, state_eval, input_eval);
+    init_bica_control_bcu(transmit_func, nullptr, nullptr);
+    init_bica_control_main(transmit_func, state_eval, input_eval);
 
     _bica_m_function_ptr func1 =  bica_get_function(BICAM_SEND_CONTROL_UPD, BICAT_CREATE);
     if(func1 != nullptr){
         _control_buffer *buf;
-        bica_create_control_buffer(&buf, input);
+        create_bica_control_buffer(&buf, input);
         printf("Processing 0x45C ");
         func1(transmission_buffer, BICA_BUFFER_LEN, buf);
         print_bica_arr(transmission_buffer, BICA_BUFFER_LEN);

@@ -5,7 +5,9 @@ BICA provides a set of messages to be implemented, a framework for implementing 
 
 BICA does *not* provide code for actually sending messages, only creating and receiving. Sending is left up to implementations, as BICA messages are designed to be work with many systems (CAN, Serial).
 
-## Implementing BICA
+**For using implemented messages, like the Control 0x4X set, see the subfolders in this directory.** 
+
+## Implementing BICA Functions
 ### Function Lookup
 The idea behind the bica framework is to use a 'lookup' to call message creation and processing functions. This lookup is called `bica_get_function(int message_id, int type)`. The power of this implementation is threefold:
 - The programmer does not need to remember the function associated with each message, or create their own lookup.
@@ -107,10 +109,12 @@ return (int)        // Whether or not it succeeded
 #### `0x4X` Control
 | ID     | Name                    | Direction | Description             | 
 | ------ | ----------------------- | --------- | ----------------------- |
-| `0x41` | Query Control Rep       | From BCU  | Replies to `0x42` with the requested stored control data. |
-| `0x42` | Query Control Req       | To BCU    | Requests for the BCU to send over some stored control data. |
-| `0x44` | Send Control Rep        | From BCU  | Reply sent after receiving a full control frame. |
+| `0x41` | Query Control Rep       | To BCU    | Replies to `0x42` while receiving the frame. |
+| `0x42` | Send Input Upd          | From BCU  | Sends updated inputs from the BCU on update. |
+| `0x43` | Request Input Upd       | To BCU    | Requests a state or input from the BCU. |
+| `0x44` | Send Control Rep        | From BCU  | Reply sent while receiving the frame. |
 | `0x45` | Send Control Upd        | To BCU    | Sent as a frame (series of messages) updating multiple control inputs. |
+*Note:* Internally, 0x42/41 and 0x45/44 are identical pairs, just primarily used in different directions. Initializing bica control as BCU v.s. MAIN configures how the processing functions are set up.
 
 #### `0xEX` Admin Messages
 | ID     | Name                    | Direction | Description             | 
@@ -137,5 +141,3 @@ Bit numbers are big-endian. Byte numbers start at 1, as Byte 0 is reserved for t
 | **TEST** | |
 | `0xFE` | Reserved | Reserved for unit tests to use. No assigned bitmap. |
 | `0xFF` | Test Dummy Message      | **`B1...BN`:** written as the number `i`, where i is the current Byte Number. |
-
-## Included Functions
