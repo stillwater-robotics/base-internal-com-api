@@ -27,7 +27,7 @@ void loop(){
     bica_control_buffer *control_buffer;
     create_bica_control_buffer(&control_buffer, to_send_1);
     //create_bica_control_buffer(&control_buffer, to_send_2a, to_send_2b, to_send_2c);
-    send_bica_control_buffer(control_buffer); // Detects whether you are BCU or Main from init functions
+    send_bica_control_buffer(&control_buffer); // Detects whether you are BCU or Main from init functions
 
     // 2. RECEIVING DATA
     /* We use a standard BICA processing loop here. */

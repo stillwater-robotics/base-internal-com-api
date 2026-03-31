@@ -127,6 +127,7 @@ int _bica_control_request_leader_process(unsigned char * buffer, int buffer_len,
     if(process_return != EOK) return process_return;
     if(send_callback)
         send_callback(callback_buffer, BICA_BUFFER_LEN);
+    return EOK;
 }
 
 int _bica_control_follower_create(unsigned char * buffer, int buffer_len, void* data, uint8_t id){
@@ -397,6 +398,7 @@ int send_bica_control_buffer(bica_control_buffer **buf_ptr){
         bica_get_function(main_init? BICAM_SEND_CONTROL_UPD: BICAM_SEND_INPUT_UPD, BICAT_CREATE)(buf, BICA_BUFFER_LEN, *buf_ptr);
     
     send_callback(buf, BICA_BUFFER_LEN);
+    return EOK;
 }
 
 int init_bica_control_bcu(_bica_ctrl_send_callback _send_callback, 
