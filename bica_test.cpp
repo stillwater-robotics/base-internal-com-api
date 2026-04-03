@@ -435,6 +435,88 @@ void test_11(){
     test_end(success_flag & receive_flag);
 }
 
+Input get_input(){
+    return input;
+}
+
+void test_12(){
+    test_start(12, "BICA request input update (0x43, 0x42, 0x41)");
+
+    //Init a success flag
+    success_flag = 1;
+    receive_flag = 0;
+
+    // Create simulated "transmission" function
+    auto transmit_func = [](uint8_t * buffer, int buffer_len)->int{
+        transmit_flag = true;
+        for(int i = 0; i < buffer_len && i < BICA_BUFFER_LEN; i++)
+            transmission_buffer[i] = buffer[i];
+        return 1;
+    };
+
+    // Create a "dummy" current state, desired state, and acceleration to see as set
+    input = Input(10.0, 50.0, 100.0);
+
+    // Create evaluation functions to 'slot' into the controller's place
+    auto state_eval = [](State _c, State _d, Pose _a)->int{
+        success_flag = 0;
+        printf("ERROR Called wrong controller callback.\n");
+        return 0;
+    };
+
+    auto input_eval = [](Input _i)->int{
+        #define SUCCESS_MARGIN 0.001
+        receive_flag = 1;
+        success_flag &= abs(_i.left - input.left) < SUCCESS_MARGIN;
+        success_flag &= abs(_i.right - input.right) < SUCCESS_MARGIN;
+        success_flag &= abs(_i.ballast - input.ballast) < SUCCESS_MARGIN;
+        printf("Expect: i%f %f %f \n", input.left, input.right, input.ballast);
+        printf("Recvd.: i%f %f %f \n", _i.left, _i.right, _i.ballast);
+    };
+
+    init_bica_control_bcu(transmit_func, nullptr, nullptr, get_input);
+    init_bica_control_main(transmit_func, state_eval, input_eval);
+
+    _bica_m_function_ptr func1 =  bica_get_function(BICAM_REQ_INPUT_UPD, BICAT_CREATE);
+    if(func1 != nullptr){
+        func1(transmission_buffer, BICA_BUFFER_LEN, nullptr);
+        print_bica_arr(transmission_buffer, BICA_BUFFER_LEN);
+        
+        transmit_flag = true;
+        int num_loops = 0;
+        #define MAX_LOOPS 100
+        while(transmit_flag && num_loops++ < MAX_LOOPS){
+            _bica_m_function_ptr func2 = bica_get_function(transmission_buffer[0], BICAT_PROCESS);
+            if(func2 == nullptr){
+                success_flag = 0;
+                printf("Failed to lookup processing function 0x%x\n", transmission_buffer[0]);
+                break;
+            }
+
+            printf("Processing 0x%xP ", transmission_buffer[0]);
+            transmit_flag = false;
+            int status = func2(transmission_buffer, BICA_BUFFER_LEN, nullptr);
+            print_bica_arr(transmission_buffer, BICA_BUFFER_LEN);
+
+            if(status != EOK){
+                printf("Function 0x%xP failed with code %d\n", transmission_buffer[0], status);
+                success_flag = 0;
+                break;
+            }
+        }
+        if(num_loops >= MAX_LOOPS){
+            success_flag = 0;
+            printf("Did not succeed withing %d loops.", MAX_LOOPS);
+        }
+
+    }else{
+        printf("Invalid Function Call\n");
+        success_flag = 0;   
+    }
+    
+    test_end(success_flag & receive_flag);
+}
+
 
 int main(int argc, char* argv[]){
     // Main BICA tests
@@ -451,6 +533,6 @@ int main(int argc, char* argv[]){
     test_9();
     test_10();
     test_11();
-    //12: get current inputs
+    test_12();
     
 }
