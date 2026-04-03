@@ -72,12 +72,14 @@ typedef _control_buffer bica_control_buffer;
 typedef int (*_bica_ctrl_send_callback)(unsigned char* buffer, int buffer_len);
 typedef int (*_update_controller_callback_states)(State current, State desired, Pose acceleration);
 typedef int (*_update_controller_callback_inputs)(Input input);
+typedef Input (*_get_controller_inputs)();
 
 /* Declare all user-facing functions */
 //Init Functions
 int init_bica_control_bcu(_bica_ctrl_send_callback _send_callback, 
     _update_controller_callback_states _ctrl_callback_states, 
-    _update_controller_callback_inputs _ctrl_callback_inputs);
+    _update_controller_callback_inputs _ctrl_callback_inputs,
+    _get_controller_inputs _ctrl_get_input);
 int init_bica_control_main(_bica_ctrl_send_callback _send_callback, 
     _update_controller_callback_states _ctrl_callback_states, 
     _update_controller_callback_inputs _ctrl_callback_inputs);
@@ -106,6 +108,7 @@ _control_buffer recieve_buffer;
 _bica_ctrl_send_callback            send_callback = nullptr;
 _update_controller_callback_states  controller_callback_states = nullptr;
 _update_controller_callback_inputs  controller_callback_inputs = nullptr;
+_get_controller_inputs              controller_get_current_inputs = nullptr;
 
 /* Helper Function Definitions */
 int _reset_receive_buffer(uint8_t _rolling_count, uint8_t _control_type){
@@ -128,12 +131,17 @@ int _bica_control_request_leader_create(unsigned char * buffer, int buffer_len, 
 int _bica_control_request_leader_process(unsigned char * buffer, int buffer_len, void* data){
     if(buffer_len < BICA_BUFFER_LEN)
         return EBADBUFFER;
+    if(controller_get_current_inputs == nullptr)
+        return EINVALIDSETUP;
 
     uint8_t callback_buffer[BICA_BUFFER_LEN];
     _bica_m_function_ptr _func = bica_get_function(BICAM_SEND_INPUT_UPD, BICAT_CREATE);
     if(_func == nullptr)
         return EINVALIDSETUP;
-    int process_return = _func(callback_buffer, BICA_BUFFER_LEN, nullptr);
+    _control_buffer * buf;
+    create_bica_control_buffer(&buf, controller_get_current_inputs());
+    
+    int process_return = _func(callback_buffer, BICA_BUFFER_LEN, buf);
     if(process_return != EOK) return process_return;
     if(send_callback)
         send_callback(callback_buffer, BICA_BUFFER_LEN);
@@ -413,7 +421,8 @@ int send_bica_control_buffer(bica_control_buffer **buf_ptr){
 
 int init_bica_control_bcu(_bica_ctrl_send_callback _send_callback, 
     _update_controller_callback_states _ctrl_callback_states, 
-    _update_controller_callback_inputs _ctrl_callback_inputs){
+    _update_controller_callback_inputs _ctrl_callback_inputs,
+    _get_controller_inputs _ctrl_get_input){
     // Fail if floats are not size 4. Yeah, we got not better solution on this one LMAO
     if( sizeof(float) != 4 )
         return EFLOATSIZE;
@@ -425,6 +434,7 @@ int init_bica_control_bcu(_bica_ctrl_send_callback _send_callback,
     controller_callback_states = _ctrl_callback_states;
     controller_callback_inputs = _ctrl_callback_inputs;
     send_callback = _send_callback;
+    controller_get_current_inputs = _ctrl_get_input;
     _reset_receive_buffer(0, 0);
     bica_set_hook(BICAM_SEND_INPUT_REP, BICAT_PROCESS, _bica_control_follower_process);
     bica_set_hook(BICAM_SEND_INPUT_UPD, BICAT_CREATE, [](unsigned char * buffer, int buffer_len, void* data)->int{

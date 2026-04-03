@@ -188,8 +188,8 @@ void test_8(){
     int success_flag;
     success_flag = init_bica_control_bcu(nullptr,
                                          [](State x, State y, Pose a)->int{return 1;}, 
-                                         [](Input i)->int{return 1;}
-                                        );
+                                         [](Input i)->int{return 1;},
+                                         nullptr);
     if(success_flag == EOK){
         printf("Allowed null bcu init _send_callback\n");
         test_end(0);
@@ -198,7 +198,8 @@ void test_8(){
 
     success_flag = init_bica_control_bcu([](unsigned char * buffer, int buf_len)->int{return 1;}, 
                                          [](State x, State y, Pose a)->int{return 1;}, 
-                                         [](Input i)->int{return 1;});
+                                         [](Input i)->int{return 1;},
+                                         nullptr);
     if(success_flag != EOK){
         printf("Fail: disallowed correct bica_init_bcu_control with errno %d\n", success_flag);
         test_end(0);
@@ -306,7 +307,7 @@ void test_10(){
 
 
     init_bica_control_main(transmit_func, nullptr, nullptr);
-    init_bica_control_bcu(transmit_func, state_eval, input_eval);
+    init_bica_control_bcu(transmit_func, state_eval, input_eval, nullptr);
 
     _bica_m_function_ptr func1 =  bica_get_function(BICAM_SEND_CONTROL_UPD, BICAT_CREATE);
     if(func1 != nullptr){
@@ -388,7 +389,7 @@ void test_11(){
         printf("Recvd.: i%f %f %f \n", _i.left, _i.right, _i.ballast);
     };
 
-    init_bica_control_bcu(transmit_func, nullptr, nullptr);
+    init_bica_control_bcu(transmit_func, nullptr, nullptr, nullptr);
     init_bica_control_main(transmit_func, state_eval, input_eval);
 
     _bica_m_function_ptr func1 =  bica_get_function(BICAM_SEND_CONTROL_UPD, BICAT_CREATE);
@@ -450,4 +451,6 @@ int main(int argc, char* argv[]){
     test_9();
     test_10();
     test_11();
+    //12: get current inputs
+    
 }
