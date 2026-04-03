@@ -30,11 +30,21 @@
 #ifndef EOK
 #define EOK             0x0
 #endif
+#ifndef EFLOATSIZE
 #define EFLOATSIZE      0x24
+#endif
+#ifndef EMALLOC
 #define EMALLOC         0x25
+#endif
+#ifndef EBADBUFFER
 #define EBADBUFFER      0x26
+#endif
+#ifndef EWINDOWMISMATCH
 #define EWINDOWMISMATCH 0x27
+#endif
+#ifndef EINVALIDSETUP
 #define EINVALIDSETUP   0x28
+#endif
 
 /* Define some simple info regarding sendable objects */
 #define STATE_LENGTH 8
@@ -120,7 +130,7 @@ int _bica_control_request_leader_process(unsigned char * buffer, int buffer_len,
         return EBADBUFFER;
 
     uint8_t callback_buffer[BICA_BUFFER_LEN];
-    _bica_m_function_ptr _func = bica_get_function(BICAM_SEND_CONTROL_UPD, BICAT_CREATE);
+    _bica_m_function_ptr _func = bica_get_function(BICAM_SEND_INPUT_UPD, BICAT_CREATE);
     if(_func == nullptr)
         return EINVALIDSETUP;
     int process_return = _func(callback_buffer, BICA_BUFFER_LEN, nullptr);
